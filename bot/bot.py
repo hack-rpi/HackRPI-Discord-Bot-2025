@@ -3,9 +3,9 @@ from discord.ext import commands
 import os
 from dotenv import load_dotenv
 
-# Announcements will work as follows: Bot pulls from website announcements page and vice versa
-# when annoucment is posted on either website or through announcement command on bot, it is posted
-# on both ends. 
+# REFERENCES
+# referencing roles: https://discordpy.readthedocs.io/en/stable/api.html#discord.Role.name\
+
 
 # Load environment variables from .env file
 load_dotenv()
@@ -18,6 +18,7 @@ if APP_ID is None:
 
 # Discord Channel ID (Replace with actual channel ID)
 CHANNEL_ID = 1337117398322647070  
+ANNOUNCEMENTS_CHANNEL_ID = 1342590654592847903
 
 preferred_channel_id = None
 
@@ -27,7 +28,7 @@ intents.messages = True
 intents.guilds = True
 intents.message_content = True
 
-
+# Custom Help Class
 class CustomHelpCommand(commands.HelpCommand):
     def get_command_signiture(self, command):
         return f'`!{command.qualified_name} {command.signature}`'
@@ -79,7 +80,7 @@ bot.help_command = CustomHelpCommand()
 
 
 
-
+# will only be triggered once the bot is added to the new server, so long as the bot doesn't go down
 @bot.event
 async def on_ready():
     """Triggered when the bot successfully logs in."""
@@ -108,11 +109,12 @@ async def on_ready():
         print(f" Unexpected error: {e}")
         
         
+#DONT NEED THIS ----------------------------------------------------------------------------------------------
 
-@bot.command()
-async def emailme(ctx, *, email: str):
-    emailObtained = email.strip() 
-    print(f'Received email from user: {ctx.author}: {emailObtained}')
+#@bot.command()
+#async def email_me(ctx, *, email: str):
+    #emailObtained = email.strip() 
+    #print(f'Received email from user: {ctx.author}: {emailObtained}')
 
     # Implement email storage logic here 
     #Assume sent to backend api to be used for emailing or something of the sort
@@ -120,14 +122,74 @@ async def emailme(ctx, *, email: str):
     #probably need to add a confirmation system so mistyped entries can be retried.
 
     # Send confirmation embed
-    returnEmbed = discord.Embed(
-        title="Email Received",
-        description=f"Here is the email you provided: **{emailObtained}**",
-        color=discord.Color.green(),
-    )
-    returnEmbed.set_footer(text="Made with ❤️ by HackRPI.")
+    #returnEmbed = discord.Embed(
+        #title="Email Received",
+        #description=f"Here is the email you provided: **{emailObtained}**",
+        #color=discord.Color.green(),
+    #)
+    #returnEmbed.set_footer(text="Made with ❤️ by HackRPI.")
     
-    await ctx.send(embed=returnEmbed)
+    #await ctx.send(embed=returnEmbed)
+#--------------------------------------------------------------------------------------------------------------
+
+
+# see_announcements command (ROLE PERMISSIVE) ------------------------------------------------------------------
+# Will just return a list of scheduled announcments
+# Assuming this will be privately messaged to user who uses this command, as if we put it in a channel, anyone can see (unless private channel)
+# has to communicate with backend to pull scheduled announcements that the bot can output
+# Inputs: Just the command !see_announcments
+# Output: list of all scheduled announcments (from discord command created announcements, as well as the ones created on the actual website)
+#@bot.command()
+#async def see_announcements():
+    
+#end-----------------------------------------------------------------------------------------------------------
+    
+
+# schedule_announcements command (ROLE PERMISSIVE) ------------------------------------------------------------
+# Only some users are allowed to use this. 
+# role permissive command (I CANT FIND ANY EXAMPLES ANYWHERE)
+# Inputs: Date, Time, (gotta find a good way to ask for this information to make sure we dont run into issues with the inputs), message
+# Might honestly be a better format to just privately message the user who uses this command with the link to the website page to make an announcement
+#
+# Output: A stored announcement in a data structure, then when the time is hit, it posts the announcement
+#@bot.command()
+#async def schedule_announcement():
+    
+#end------------------------------------------------------------------------------------------------------------
+
+
+# announcement_immediately command (ROLE PERMISSIVE) -----------------------------------------------------------
+# Only some users are allowed to use this.
+# Need to find out how to create roll permissive bot commands - discord.py docs not very helpful 
+# we need this to create an announcment in the coressponding channel, @everyone then create an embed message with the wanted information
+# Inputs: Title of Announcement, Message
+# Output: embed message in the announcement channel
+
+@bot.command()
+@commands.has_role("Admin HackRPI") # Role in my testing discord server for testing purposes
+async def announcement_immediately(ctx, title: str, *, message: str):
+        channel = await bot.fetch_channel(CHANNEL_ID)
+        
+        if channel is None:
+            await ctx.send("Error: Announcement channel not found.")
+        return
+
+        embed = discord.Embed(
+        title=title,  # Use the provided title
+        description=message,  # Use the provided message
+        color=discord.Color.red()
+        )
+    
+        embed.set_footer(text=f"Announced by {ctx.author.display_name}")
+
+        await channel.send("@everyone")
+        await channel.send(embed=embed)
+        
+        await ctx.send("Announcment posted Successfully")
+    
+    
+#end -----------------------------------------------------------------------------------------------------------
+    
 
 # Run the bot
 bot.run(APP_ID)
