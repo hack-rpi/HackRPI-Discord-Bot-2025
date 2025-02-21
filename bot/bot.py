@@ -1,5 +1,7 @@
 import discord
 from discord.ext import commands
+from discord import ui
+from discord.ui import Button, View
 import os
 from dotenv import load_dotenv
 
@@ -12,6 +14,8 @@ load_dotenv()
 
 # Retrieve APP_ID (Bot Token)
 APP_ID = os.getenv("APP_ID")
+
+adminRoll = "Admin HackRPI"
 
 if APP_ID is None:
     raise ValueError("Missing APP_ID. Ensure you have a .env file with APP_ID=YOUR_BOT_TOKEN")
@@ -152,8 +156,27 @@ async def on_ready():
 # Might honestly be a better format to just privately message the user who uses this command with the link to the website page to make an announcement
 #
 # Output: A stored announcement in a data structure, then when the time is hit, it posts the announcement
-#@bot.command()
-#async def schedule_announcement():
+
+# Creating a discord Modal for scheduling the event instead of just typing the text out.
+class ScheduleAnnouncement(ui.Modal, title = 'Schedule Announcement'):
+    titleOfMessage = ui.TextInput(label="Title", placeholder="Enter your title here...", required=True, style= discord.TextStyle.short)
+    time = ui.TextInput(label = "Date", placeholder="MM/DD/YY HH/MM/SS Format", required=True, style= discord.TextStyle.short)
+    message = ui.TextInput(label = "Message", placeholder="Enter your message here...", required=True, style= discord.TextStyle.short)
+    
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.send_message(f'Your announcement has been stored')
+        
+@bot.command()
+@commands.has_role(adminRoll)
+async def schedule_announcement(ctx):
+    
+    view = View()
+    modalButton = Button(label = "Click here to schedule announcement.")
+    async def modalButtonClicked(interaction: discord.Interaction):
+        await interaction.response.send_modal(ScheduleAnnouncement())
+    modalButton.callback = modalButtonClicked
+    view.add_item(modalButton)
+    await ctx.reply("Schedule your announcent below.", view=view)
     
 #end------------------------------------------------------------------------------------------------------------
 
@@ -165,27 +188,60 @@ async def on_ready():
 # Inputs: Title of Announcement, Message
 # Output: embed message in the announcement channel
 
+class AnnounceImmediately(ui.Modal, title = "Announce Now!"):
+    titleOfAnnouncement = ui.TextInput(label = "Title", placeholder = "Enter your title here...")
+    message = ui.TextInput(label = "Message", placeholder="Enter your message here...")
+    name = ui.TextInput(label = "Name", placeholder="Enter your name here...")
+    
+    async def on_submit(self, interaction: discord.Interaction):
+        embed = discord.Embed(
+            title = titleOfAnnouncement, #title we received by modal
+            message = message,#message received from modal
+            color = discord.Color.red()
+        )
+        embed.set_footer(text= f'Announced by {ctx.author.display_name}')
+    
+
 @bot.command()
 @commands.has_role("Admin HackRPI") # Role in my testing discord server for testing purposes
-async def announcement_immediately(ctx, title: str, *, message: str):
-        channel = await bot.fetch_channel(CHANNEL_ID)
+async def announce_immediately(ctx):
+        channel = await bot.fetch_channel(ANNOUNCEMENTS_CHANNEL_ID)
         
-        if channel is None:
-            await ctx.send("Error: Announcement channel not found.")
-        return
-
+        view = View()
+        modalButton = Button(label = "Click here to create an announcement.")
+        
+        async def modalButtonClicked(interaction: discord.Interaction):
+            await interaction.response.send_modal(AnnounceImmediately())
+        modalButton.callback = modalButtonClicked
+        view.add_item(modalButton)
+        
         embed = discord.Embed(
-        title=title,  # Use the provided title
-        description=message,  # Use the provided message
-        color=discord.Color.red()
+            title="Send Your Announcement Below",
+            color = discord.Color.red(),
         )
-    
-        embed.set_footer(text=f"Announced by {ctx.author.display_name}")
-
-        await channel.send("@everyone")
-        await channel.send(embed=embed)
+        await ctx.reply(embed=embed, view=view)
         
-        await ctx.send("Announcment posted Successfully")
+        
+        
+        
+        
+        
+        #if channel is None:
+           # await ctx.send("Error: Announcement channel not found.")
+            #return
+                
+
+       # embed = discord.Embed(
+       # title=title,  # Use the provided title
+       # description=message,  # Use the provided message
+       # color=discord.Color.red()
+      #  )
+    
+        #embed.set_footer(text=f"Announced by {ctx.author.display_name}")
+
+       # await channel.send("@everyone", embed=embed)
+        
+       # await ctx.send("Announcement posted Successfully")
     
     
 #end -----------------------------------------------------------------------------------------------------------
