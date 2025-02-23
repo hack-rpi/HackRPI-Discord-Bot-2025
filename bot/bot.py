@@ -111,30 +111,6 @@ async def on_ready():
         print("Error: Bot lacks permission to fetch/send messages in this channel.")
     except Exception as e:
         print(f" Unexpected error: {e}")
-        
-        
-#DONT NEED THIS ----------------------------------------------------------------------------------------------
-
-#@bot.command()
-#async def email_me(ctx, *, email: str):
-    #emailObtained = email.strip() 
-    #print(f'Received email from user: {ctx.author}: {emailObtained}')
-
-    # Implement email storage logic here 
-    #Assume sent to backend api to be used for emailing or something of the sort
-    
-    #probably need to add a confirmation system so mistyped entries can be retried.
-
-    # Send confirmation embed
-    #returnEmbed = discord.Embed(
-        #title="Email Received",
-        #description=f"Here is the email you provided: **{emailObtained}**",
-        #color=discord.Color.green(),
-    #)
-    #returnEmbed.set_footer(text="Made with ❤️ by HackRPI.")
-    
-    #await ctx.send(embed=returnEmbed)
-#--------------------------------------------------------------------------------------------------------------
 
 
 # see_announcements command (ROLE PERMISSIVE) ------------------------------------------------------------------
@@ -143,8 +119,8 @@ async def on_ready():
 # has to communicate with backend to pull scheduled announcements that the bot can output
 # Inputs: Just the command !see_announcments
 # Output: list of all scheduled announcments (from discord command created announcements, as well as the ones created on the actual website)
-#@bot.command()
-#async def see_announcements():
+# @bot.command()
+# async def see_announcements():
     
 #end-----------------------------------------------------------------------------------------------------------
     
@@ -188,22 +164,35 @@ async def schedule_announcement(ctx):
 # Inputs: Title of Announcement, Message
 # Output: embed message in the announcement channel
 
-class AnnounceImmediately(ui.Modal, title = "Announce Now!"):
+class AnnounceImmediately(ui.Modal, title = "Announce Now!"):    
     titleOfAnnouncement = ui.TextInput(label = "Title", placeholder = "Enter your title here...")
-    message = ui.TextInput(label = "Message", placeholder="Enter your message here...")
+    message = ui.TextInput(label = "Message", placeholder="Enter your message here...", style=discord.TextStyle.long)
+    links = ui.TextInput(label="Links", placeholder="Paste any links you want in the message...", required=False)
     name = ui.TextInput(label = "Name", placeholder="Enter your name here...")
     
     async def on_submit(self, interaction: discord.Interaction):
+        channel = await bot.fetch_channel(ANNOUNCEMENTS_CHANNEL_ID)
         embed = discord.Embed(
-            title = titleOfAnnouncement, #title we received by modal
-            message = message,#message received from modal
+            title = self.titleOfAnnouncement.value, #title we received by modal
+            description = self.message.value, #message received from modal
             color = discord.Color.red()
         )
-        embed.set_footer(text= f'Announced by {ctx.author.display_name}')
+        if self.links.value == None:
+            print("NO LINKS ENTERED.")
+        else:
+            embed.add_field(
+            name="Links",
+            value= self.links.value,
+        )
+        embed.set_footer(text= f'Announced by {self.name.value}') # name recieved from modal
+        await channel.send(embed=embed)
+        
+        #Close the modal and make sure it doesn't show an error
+        await interaction.response.send_message("Announcement sent successfully!", ephemeral= True) #Ephemeral just means that it is only visible to user who sent the form.
     
 
 @bot.command()
-@commands.has_role("Admin HackRPI") # Role in my testing discord server for testing purposes
+@commands.has_role("Admin HackRPI") # Role in my testing discord server for testing purposes. Will replace with actual admin role(s) that has access to announcements.
 async def announce_immediately(ctx):
         channel = await bot.fetch_channel(ANNOUNCEMENTS_CHANNEL_ID)
         
@@ -221,27 +210,6 @@ async def announce_immediately(ctx):
         )
         await ctx.reply(embed=embed, view=view)
         
-        
-        
-        
-        
-        
-        #if channel is None:
-           # await ctx.send("Error: Announcement channel not found.")
-            #return
-                
-
-       # embed = discord.Embed(
-       # title=title,  # Use the provided title
-       # description=message,  # Use the provided message
-       # color=discord.Color.red()
-      #  )
-    
-        #embed.set_footer(text=f"Announced by {ctx.author.display_name}")
-
-       # await channel.send("@everyone", embed=embed)
-        
-       # await ctx.send("Announcement posted Successfully")
     
     
 #end -----------------------------------------------------------------------------------------------------------
