@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 import dateparser
 import pause
 from datetime import datetime
+import asyncio
 
 # REFERENCES
 # referencing roles: https://discordpy.readthedocs.io/en/stable/api.html#discord.Role.name\
@@ -138,36 +139,56 @@ async def on_ready():
 # Output: A stored announcement in a data structure, then when the time is hit, it posts the announcement
 
 # Creating a discord Modal for scheduling the event instead of just typing the text out.
-class ScheduleAnnouncement(ui.Modal, title = 'Schedule Announcement'):
-    titleOfMessage = ui.TextInput(label="Title", placeholder="Enter your title here...", required=True, style= discord.TextStyle.long)
-    # Picking time may be better to use option pickers, rather than text input... Gotta look into this.
-    time = ui.TextInput(label = "Date", placeholder="Input natural language: \"Tomorrow at 5PM...\"", required=True, style= discord.TextStyle.short)
-    message = ui.TextInput(label = "Message", placeholder="Enter your message here...", required=True, style= discord.TextStyle.short)
-    links = ui.TextInput(label= "Links", placeholder= "Enter any links here...", required= False)
-    name = ui.TextInput(label = "Name", placeholder="Enter your name here...")
-    
-    async def on_submit(self, interaction: discord.Interaction):
-        # IMPLEMENT LOGIC TO CHECK FOR TIME AND THEN POST ANNOUNCEMENT WHEN TIME HITS...
-        parsedTime = dateparser.parse(self.time.value, settings={'TIMEZONE': 'US/Eastern'} )
-        print(f"This is the parsed time using dateparser that we can use: {parsedTime}")
-        channel = await bot.fetch_channel(ANNOUNCEMENTS_CHANNEL_ID)
-        embed = discord.Embed(
-            title= self.titleOfMessage.value,
-            description= self.message.value,
-            color= discord.Color.red(),
-        )
-        if self.links.value == None:
-            print("NO LINKS ENTERED.")
-        else:
-            embed.add_field(
-            name="Links",
-            value= self.links.value,
-        )
-        embed.set_footer(text= f'Announced by {self.name.value}') # name recieved from modal
-        await interaction.response.send_message(f'Announcement will be sent at {self.time.value}', ephemeral=True) #Ephemeral just means that it is only visible to user who sent the form.
+class ScheduleAnnouncement(ui.Modal, title="Schedule Announcement"):
+    titleOfMessage = ui.TextInput(label="Title", placeholder="Enter your title here...", required=True, style=discord.TextStyle.short)
+    time = ui.TextInput(label="Date", placeholder="Input natural language: \"Tomorrow at 5PM...\"", required=True, style=discord.TextStyle.short)
+    message = ui.TextInput(label="Message", placeholder="Enter your message here...", required=True, style=discord.TextStyle.long)
+    links = ui.TextInput(label="Links", placeholder="Enter any links here...", required=False)
+    name = ui.TextInput(label="Name", placeholder="Enter your name here...", required=True)
 
-        pause.until(parsedTime)
-        await channel.send(embed=embed)
+    async def on_submit(self, interaction: discord.Interaction):
+        parsedTime = dateparser.parse(self.time.value, settings={'TIMEZONE': 'US/Eastern'})
+        
+        if parsedTime is None:
+            await interaction.response.send_message("Invalid date format. Please use natural language like 'July 30 at 5:30PM'.", ephemeral=True)
+            return
+
+        # Get the current time
+        now = datetime.now()
+        
+        # Calculate the time difference in seconds to delay the send announcement func 
+        delay = (parsedTime - now).total_seconds()
+        
+        if delay <= 0:
+            await interaction.response.send_message("The specified time is in the past. Please provide a future time.", ephemeral=True)
+            return
+
+        # Acknowledge the interaction immediately so the modal closes
+        await interaction.response.send_message(f'Announcement scheduled for {parsedTime}', ephemeral=True)
+
+        # Define the async function inside on_submit() so it has access to modal data
+        async def send_announcement_after_delay():
+            await asyncio.sleep(delay)  # delay without blocking rest of bot functions
+
+            # Fetch the announcement channel
+            channel = await interaction.client.fetch_channel(ANNOUNCEMENTS_CHANNEL_ID)
+
+            # Create the embed message
+            embed = discord.Embed(
+                title=self.titleOfMessage.value,
+                description=self.message.value,
+                color=discord.Color.red(),
+            )
+
+            if self.links.value:
+                embed.add_field(name="Links", value=self.links.value)
+
+            embed.set_footer(text=f'Announced by {self.name.value}')
+
+            await channel.send(embed=embed)
+
+        # Schedule the function as a background task so we don't pause entire bot while waiting for announcement
+        asyncio.create_task(send_announcement_after_delay())
         
 
         
