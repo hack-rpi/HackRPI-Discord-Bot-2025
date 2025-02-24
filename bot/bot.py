@@ -4,6 +4,9 @@ from discord import ui
 from discord.ui import Button, View
 import os
 from dotenv import load_dotenv
+import dateparser
+import pause
+from datetime import datetime
 
 # REFERENCES
 # referencing roles: https://discordpy.readthedocs.io/en/stable/api.html#discord.Role.name\
@@ -119,6 +122,7 @@ async def on_ready():
 # has to communicate with backend to pull scheduled announcements that the bot can output
 # Inputs: Just the command !see_announcments
 # Output: list of all scheduled announcments (from discord command created announcements, as well as the ones created on the actual website)
+# Best output format is probably using discord pagination, each response sent as an embed, and then we can cycle through different announcements using reactions.
 # @bot.command()
 # async def see_announcements():
     
@@ -135,12 +139,37 @@ async def on_ready():
 
 # Creating a discord Modal for scheduling the event instead of just typing the text out.
 class ScheduleAnnouncement(ui.Modal, title = 'Schedule Announcement'):
-    titleOfMessage = ui.TextInput(label="Title", placeholder="Enter your title here...", required=True, style= discord.TextStyle.short)
-    time = ui.TextInput(label = "Date", placeholder="MM/DD/YY HH/MM/SS Format", required=True, style= discord.TextStyle.short)
+    titleOfMessage = ui.TextInput(label="Title", placeholder="Enter your title here...", required=True, style= discord.TextStyle.long)
+    # Picking time may be better to use option pickers, rather than text input... Gotta look into this.
+    time = ui.TextInput(label = "Date", placeholder="Input natural language: \"Tomorrow at 5PM...\"", required=True, style= discord.TextStyle.short)
     message = ui.TextInput(label = "Message", placeholder="Enter your message here...", required=True, style= discord.TextStyle.short)
+    links = ui.TextInput(label= "Links", placeholder= "Enter any links here...", required= False)
+    name = ui.TextInput(label = "Name", placeholder="Enter your name here...")
     
     async def on_submit(self, interaction: discord.Interaction):
-        await interaction.response.send_message(f'Your announcement has been stored')
+        # IMPLEMENT LOGIC TO CHECK FOR TIME AND THEN POST ANNOUNCEMENT WHEN TIME HITS...
+        parsedTime = dateparser.parse(self.time.value, settings={'TIMEZONE': 'US/Eastern'} )
+        print(f"This is the parsed time using dateparser that we can use: {parsedTime}")
+        channel = await bot.fetch_channel(ANNOUNCEMENTS_CHANNEL_ID)
+        embed = discord.Embed(
+            title= self.titleOfMessage.value,
+            description= self.message.value,
+            color= discord.Color.red(),
+        )
+        if self.links.value == None:
+            print("NO LINKS ENTERED.")
+        else:
+            embed.add_field(
+            name="Links",
+            value= self.links.value,
+        )
+        embed.set_footer(text= f'Announced by {self.name.value}') # name recieved from modal
+        await interaction.response.send_message(f'Announcement will be sent at {self.time.value}', ephemeral=True) #Ephemeral just means that it is only visible to user who sent the form.
+
+        pause.until(parsedTime)
+        await channel.send(embed=embed)
+        
+
         
 @bot.command()
 @commands.has_role(adminRoll)
@@ -157,13 +186,12 @@ async def schedule_announcement(ctx):
 #end------------------------------------------------------------------------------------------------------------
 
 
-# announcement_immediately command (ROLE PERMISSIVE) -----------------------------------------------------------
+# announce_immediately command (ROLE PERMISSIVE) -----------------------------------------------------------
 # Only some users are allowed to use this.
 # Need to find out how to create roll permissive bot commands - discord.py docs not very helpful 
 # we need this to create an announcment in the coressponding channel, @everyone then create an embed message with the wanted information
 # Inputs: Title of Announcement, Message
 # Output: embed message in the announcement channel
-
 class AnnounceImmediately(ui.Modal, title = "Announce Now!"):    
     titleOfAnnouncement = ui.TextInput(label = "Title", placeholder = "Enter your title here...")
     message = ui.TextInput(label = "Message", placeholder="Enter your message here...", style=discord.TextStyle.long)
@@ -192,7 +220,7 @@ class AnnounceImmediately(ui.Modal, title = "Announce Now!"):
     
 
 @bot.command()
-@commands.has_role("Admin HackRPI") # Role in my testing discord server for testing purposes. Will replace with actual admin role(s) that has access to announcements.
+@commands.has_role(adminRoll) # Role in my testing discord server for testing purposes. Will replace with actual admin role(s) that has access to announcements.
 async def announce_immediately(ctx):
         channel = await bot.fetch_channel(ANNOUNCEMENTS_CHANNEL_ID)
         

@@ -2,3 +2,5 @@ flask
 discord
 discord.py
 python-dotenv
+dateparser
+pause
