@@ -5,13 +5,13 @@ from discord.ui import Button, View
 import os
 from dotenv import load_dotenv
 import dateparser
-import pause
 from datetime import datetime
 import asyncio
 
 # REFERENCES
 # referencing roles: https://discordpy.readthedocs.io/en/stable/api.html#discord.Role.name\
 
+markdownImage = "markdownTips.png"
 
 # Load environment variables from .env file
 load_dotenv()
@@ -195,14 +195,30 @@ class ScheduleAnnouncement(ui.Modal, title="Schedule Announcement"):
 @bot.command()
 @commands.has_role(adminRoll)
 async def schedule_announcement(ctx):
-    
     view = View()
-    modalButton = Button(label = "Click here to schedule announcement.")
+    modalButton = Button(label="Click here to schedule announcement.")
+
     async def modalButtonClicked(interaction: discord.Interaction):
         await interaction.response.send_modal(ScheduleAnnouncement())
+
     modalButton.callback = modalButtonClicked
     view.add_item(modalButton)
-    await ctx.reply("Schedule your announcent below.", view=view)
+
+    embed = discord.Embed(
+        title="Schedule Your Announcement Below",
+        color=discord.Color.blue(),
+    )
+    embed.add_field(
+        name="Helpful Markdown Tips",
+        value="See the attached image below for Markdown formatting help!",
+        inline=False
+    )
+
+    # Attach the image
+    file = discord.File("markdownTips.png", filename="markdownTips.png")
+    embed.set_image(url="attachment://markdownTips.png")  # Reference the attached image
+
+    await ctx.reply(embed=embed, file=file, view=view)
     
 #end------------------------------------------------------------------------------------------------------------
 
@@ -241,23 +257,32 @@ class AnnounceImmediately(ui.Modal, title = "Announce Now!"):
     
 
 @bot.command()
-@commands.has_role(adminRoll) # Role in my testing discord server for testing purposes. Will replace with actual admin role(s) that has access to announcements.
+@commands.has_role(adminRoll)
 async def announce_immediately(ctx):
-        channel = await bot.fetch_channel(ANNOUNCEMENTS_CHANNEL_ID)
-        
-        view = View()
-        modalButton = Button(label = "Click here to create an announcement.")
-        
-        async def modalButtonClicked(interaction: discord.Interaction):
-            await interaction.response.send_modal(AnnounceImmediately())
-        modalButton.callback = modalButtonClicked
-        view.add_item(modalButton)
-        
-        embed = discord.Embed(
-            title="Send Your Announcement Below",
-            color = discord.Color.red(),
-        )
-        await ctx.reply(embed=embed, view=view)
+    view = View()
+    modalButton = Button(label="Click here to create an announcement.")
+
+    async def modalButtonClicked(interaction: discord.Interaction):
+        await interaction.response.send_modal(AnnounceImmediately())
+
+    modalButton.callback = modalButtonClicked
+    view.add_item(modalButton)
+
+    embed = discord.Embed(
+        title="Send Your Announcement Below",
+        color=discord.Color.blue(),
+    )
+    embed.add_field(
+        name="Helpful Markdown Tips",
+        value="See the attached image below for Markdown formatting help!",
+        inline=False
+    )
+
+    # Attach the image
+    file = discord.File("markdownTips.png", filename="markdownTips.png")
+    embed.set_image(url=f"attachment://markdownTips.png")  # Reference the attached image
+
+    await ctx.reply(embed=embed, file=file, view=view)
         
     
     
