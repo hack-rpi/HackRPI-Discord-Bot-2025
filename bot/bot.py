@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from discord import ui
 from discord.ui import Button, View
+from discord import app_commands
 import os
 from dotenv import load_dotenv
 import dateparser
@@ -35,6 +36,7 @@ intents = discord.Intents.default()
 intents.messages = True
 intents.guilds = True
 intents.message_content = True
+
 
 # Custom Help Class
 class CustomHelpCommand(commands.HelpCommand):
@@ -84,6 +86,7 @@ class CustomHelpCommand(commands.HelpCommand):
 
 # Initialize the bot with the desired command prefix and intents
 bot = commands.Bot(command_prefix="!", intents=intents, help_command=CustomHelpCommand())
+tree = bot.tree
 bot.help_command = CustomHelpCommand()
 
 
@@ -93,6 +96,7 @@ bot.help_command = CustomHelpCommand()
 async def on_ready():
     """Triggered when the bot successfully logs in."""
     await bot.wait_until_ready()  # Ensure bot is fully ready before proceeding
+    await bot.tree.sync()
     print(f'Logged in as {bot.user} (ID: {bot.user.id})')
 
     try:
@@ -288,6 +292,36 @@ async def announce_immediately(ctx):
     
 #end -----------------------------------------------------------------------------------------------------------
     
+    
+#Tree command for announce immediately
+@tree.command(
+    name="announcenow",
+    description="Create an announcement immediately."
+)
+async def announce_now(interaction: discord.Interaction):
+    view = discord.ui.View()
+    modalButton = discord.ui.Button(label="Click here to create an announcement.")
+
+    async def modalButtonClicked(button_interaction: discord.Interaction):
+        await button_interaction.response.send_modal(AnnounceImmediately())
+
+    modalButton.callback = modalButtonClicked
+    view.add_item(modalButton)
+
+    embed = discord.Embed(
+        title="Send Your Announcement Below",
+        color=discord.Color.blue(),
+    )
+    embed.add_field(
+        name="Helpful Markdown Tips",
+        value="See the attached image below for Markdown formatting help!",
+        inline=False
+    )
+    file = discord.File("markdownTips.png", filename="markdownTips.png")
+    embed.set_image(url="attachment://markdownTips.png")
+
+    # For slash commands:
+    await interaction.response.send_message(embed=embed, file=file, view=view, ephemeral=True)
 
 # Run the bot
 bot.run(APP_ID)
