@@ -58,8 +58,8 @@ class CustomHelpCommand(commands.HelpCommand):
         embed.add_field(
             name = "Examples",
             value = (
-                "`!announcement 09/09/2000, 5:00PM \"Welcome to HackRPI. Good luck!` - Schedule and create a new announcment, indicate date and time, enclose message in quotes."
-                "`\n!resources` - All resources offered to help you create your project."
+                "`!schedule_announcement` - Schedule and create a new announcment, indicate date and time and follow all instructions shown. Links not required."
+                "`\n!immediate_announcement` - Create an immediate announcement, follow all instructions shown, and an announcement will be sent as soon as you submit."
             ),
         inline = False
         )
