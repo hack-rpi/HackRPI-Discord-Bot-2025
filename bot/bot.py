@@ -226,6 +226,38 @@ async def schedule_announcement(ctx):
     
 #end------------------------------------------------------------------------------------------------------------
 
+# TREE VERSION OF SCHEDULE ANNOUNCEMENT
+@tree.command(
+    name= "scheduleannouncement",
+    description="Create an announcement that is scheduled to be posted at the time you have indicated."
+    )
+async def schedule_announcement(interaction: discord.Interaction):
+    view = View()
+    modalButton = Button(label="Click here to schedule announcement.")
+
+    async def modalButtonClicked(interaction: discord.Interaction):
+        await interaction.response.send_modal(ScheduleAnnouncement())
+
+    modalButton.callback = modalButtonClicked
+    view.add_item(modalButton)
+
+    embed = discord.Embed(
+        title="Schedule Your Announcement Below",
+        color=discord.Color.blue(),
+    )
+    embed.add_field(
+        name="Helpful Markdown Tips",
+        value="See the attached image below for Markdown formatting help!",
+        inline=False
+    )
+
+    # Attach the image
+    file = discord.File("markdownTips.png", filename="markdownTips.png")
+    embed.set_image(url="attachment://markdownTips.png")  # Reference the attached image
+
+    await interaction.response.send_message(embed=embed, file=file, view=view, ephemeral=True)
+
+
 
 # announce_immediately command (ROLE PERMISSIVE) -----------------------------------------------------------
 # Only some users are allowed to use this.
