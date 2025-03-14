@@ -8,11 +8,32 @@ from dotenv import load_dotenv
 import dateparser
 from datetime import datetime
 import asyncio
+import certifi
+
+from pymongo.mongo_client import MongoClient
+from pymongo.server_api import ServerApi
+
+from insert_into_collection import insert_announcement
+from get_database import getDataBase
 
 # REFERENCES
 # referencing roles: https://discordpy.readthedocs.io/en/stable/api.html#discord.Role.name\
+print("Got here")
+uri = "mongodb+srv://seanhyde04:8kWiZWCqz1hsdGaV@discordbotannouncements.elqf3.mongodb.net/?retryWrites=true&w=majority&appName=DiscordBotAnnouncements"
+client = MongoClient(uri, tlsCAFile=certifi.where())
+try:
+    client.admin.command('ping')
+    print("Successfully connected to MongoDB!")
+except Exception as e:
+    print(f"Error: {e}")
+    
+#get database
+dbname = getDataBase()
+
+
 
 markdownImage = "markdownTips.png"
+
 
 # Load environment variables from .env file
 load_dotenv()
@@ -166,6 +187,9 @@ class ScheduleAnnouncement(ui.Modal, title="Schedule Announcement"):
         if delay <= 0:
             await interaction.response.send_message("The specified time is in the past. Please provide a future time.", ephemeral=True)
             return
+        
+        # Send scheduled announcement to DB
+        insert_announcement(self.titleOfMessage.value, parsedTime, self.message.value, self.links.value, self.name.value  )
 
         # Acknowledge the interaction immediately so the modal closes
         await interaction.response.send_message(f'Announcement scheduled for {parsedTime}', ephemeral=True)
@@ -194,37 +218,6 @@ class ScheduleAnnouncement(ui.Modal, title="Schedule Announcement"):
         # Schedule the function as a background task so we don't pause entire bot while waiting for announcement
         asyncio.create_task(send_announcement_after_delay())
         
-
-        
-@bot.command()
-@commands.has_role(adminRoll)
-async def schedule_announcement(ctx):
-    view = View()
-    modalButton = Button(label="Click here to schedule announcement.")
-
-    async def modalButtonClicked(interaction: discord.Interaction):
-        await interaction.response.send_modal(ScheduleAnnouncement())
-
-    modalButton.callback = modalButtonClicked
-    view.add_item(modalButton)
-
-    embed = discord.Embed(
-        title="Schedule Your Announcement Below",
-        color=discord.Color.blue(),
-    )
-    embed.add_field(
-        name="Helpful Markdown Tips",
-        value="See the attached image below for Markdown formatting help!",
-        inline=False
-    )
-
-    # Attach the image
-    file = discord.File("markdownTips.png", filename="markdownTips.png")
-    embed.set_image(url="attachment://markdownTips.png")  # Reference the attached image
-
-    await ctx.reply(embed=embed, file=file, view=view)
-    
-#end------------------------------------------------------------------------------------------------------------
 
 # TREE VERSION OF SCHEDULE ANNOUNCEMENT
 @tree.command(
@@ -291,39 +284,6 @@ class AnnounceImmediately(ui.Modal, title = "Announce Now!"):
         #Close the modal and make sure it doesn't show an error
         await interaction.response.send_message("Announcement sent successfully!", ephemeral= True) #Ephemeral just means that it is only visible to user who sent the form.
     
-
-@bot.command()
-@commands.has_role(adminRoll)
-async def announce_immediately(ctx):
-    view = View()
-    modalButton = Button(label="Click here to create an announcement.")
-
-    async def modalButtonClicked(interaction: discord.Interaction):
-        await interaction.response.send_modal(AnnounceImmediately())
-
-    modalButton.callback = modalButtonClicked
-    view.add_item(modalButton)
-
-    embed = discord.Embed(
-        title="Send Your Announcement Below",
-        color=discord.Color.blue(),
-    )
-    embed.add_field(
-        name="Helpful Markdown Tips",
-        value="See the attached image below for Markdown formatting help!",
-        inline=False
-    )
-
-    # Attach the image
-    file = discord.File("markdownTips.png", filename="markdownTips.png")
-    embed.set_image(url=f"attachment://markdownTips.png")  # Reference the attached image
-
-    await ctx.reply(embed=embed, file=file, view=view)
-        
-    
-    
-#end -----------------------------------------------------------------------------------------------------------
-    
     
 #Tree command for announce immediately
 @tree.command(
@@ -354,6 +314,10 @@ async def announce_now(interaction: discord.Interaction):
 
     # For slash commands:
     await interaction.response.send_message(embed=embed, file=file, view=view, ephemeral=True)
+    
+def main():
+    bot.run(APP_ID)
+    
 
-# Run the bot
-bot.run(APP_ID)
+if __name__ == "__main__":
+    main()
