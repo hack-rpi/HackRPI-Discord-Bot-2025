@@ -2,3 +2,8 @@ flask
 discord
 discord.py
 python-dotenv
+dateparser
+pause
+asyncio
+pymongo[srv]
+certifi
