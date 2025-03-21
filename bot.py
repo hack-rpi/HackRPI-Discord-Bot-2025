@@ -40,7 +40,6 @@ load_dotenv()
 # Retrieve APP_ID (Bot Token)
 APP_ID = os.getenv("APP_ID")
 
-adminRoll = "Admin HackRPI"
 
 if APP_ID is None:
     raise ValueError("Missing APP_ID. Ensure you have a .env file with APP_ID=YOUR_BOT_TOKEN")
@@ -56,6 +55,14 @@ intents = discord.Intents.default()
 intents.messages = True
 intents.guilds = True
 intents.message_content = True
+
+def is_organizer(role_name: str):
+    async def predicate(interaction: discord.Interaction) -> bool:
+        if interaction.guild is None:
+            return False
+        
+        return any(role.name == role_name for role in interaction.user.roles)
+    return app_commands.check(predicate)
 
 
 # Custom Help Class
@@ -108,6 +115,10 @@ class CustomHelpCommand(commands.HelpCommand):
 bot = commands.Bot(command_prefix="!", intents=intents, help_command=CustomHelpCommand())
 tree = bot.tree
 bot.help_command = CustomHelpCommand()
+
+
+
+    
 
 
 
@@ -223,6 +234,7 @@ class ScheduleAnnouncement(ui.Modal, title="Schedule Announcement"):
     name= "schedule_announcement",
     description="Create an announcement that is scheduled to be posted at the time you have indicated."
     )
+@is_organizer("Organizer")
 async def schedule_announcement(interaction: discord.Interaction):
     view = View()
     modalButton = Button(label="Click here to schedule announcement.")
@@ -289,6 +301,7 @@ class AnnounceImmediately(ui.Modal, title = "Announce Now!"):
     name="announce_now",
     description="Create an announcement immediately."
 )
+@is_organizer("Organizer")
 async def announce_now(interaction: discord.Interaction):
     view = discord.ui.View()
     modalButton = discord.ui.Button(label="Click here to create an announcement.")
@@ -319,6 +332,7 @@ async def announce_now(interaction: discord.Interaction):
     name="see_scheduled_announcements",
     description="See all scheduled announcements."
 )
+@is_organizer("Organizer")
 async def see_scheduled_announcements(interaction: discord.Interaction):
     """
     Slash command to view all scheduled announcements with pagination.
@@ -404,6 +418,7 @@ class AnnouncementsPaginatorView(discord.ui.View):
             self.cur_page += 1
         embed = self.create_embed()
         await interaction.response.edit_message(embed=embed, view=self)
+
 
     
 def main():
