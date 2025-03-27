@@ -333,17 +333,37 @@ async def see_scheduled_announcements(interaction: discord.Interaction):
     """
     #Fetch all documents from the collection as a list
     doc_list = list(collection.find())
-
-    #If there are no documents, send an ephemeral message
+    
     if not doc_list:
         await interaction.response.send_message(
             "No scheduled announcements found.",
             ephemeral=True
         )
         return
+    
+    now = datetime.now()
+    future_docs = []
+    for doc in doc_list:
+        scheduled_time = doc.get("time")
+        if isinstance(scheduled_time, str):
+            scheduled_time = datetime.fromisoformat(scheduled_time)
+        
+        if not scheduled_time:
+            continue
+        
+        if scheduled_time > now:
+            future_docs.append(doc)
+            
+    if not future_docs:
+        await interaction.response.send_message(
+            "No future announcements found.",
+            ephemeral=True
+        )
+
+
 
     #Create the paginator View, passing in the list of documents
-    view = AnnouncementsPaginatorView(doc_list)
+    view = AnnouncementsPaginatorView(future_docs)
 
     
     embed = view.create_embed()
@@ -475,15 +495,41 @@ class SeePastAnnouncements(discord.ui.View):
 @is_organizer("Organizer")
 async def see_past_announcements(interaction: discord.Interaction):
     doc_list = list(collection.find())
-
     if not doc_list:
         await interaction.response.send_message(
             "No scheduled announcements found.",
             ephemeral=True
         )
         return
+    
+    now = datetime.now()
+    past_docs = []
+    for doc in doc_list:
+        scheduled_time = doc.get("time")
+        if isinstance(scheduled_time, str):
+            scheduled_time = datetime.fromisoformat(scheduled_time)
+        
+        if not scheduled_time:
+            continue
+        
+        if scheduled_time < now:
+            past_docs.append(doc)
+            
+    if not past_docs:
+        await interaction.response.send_message(
+            "No future announcements found.",
+            ephemeral=True
+        )
+    
 
-    view = SeePastAnnouncements(doc_list)
+    if not past_docs:
+        await interaction.response.send_message(
+            "No posted announcements found.",
+            ephemeral=True
+        )
+        return
+
+    view = SeePastAnnouncements(past_docs)
     embed = view.create_embed()
 
     await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
