@@ -9,7 +9,6 @@ import dateparser
 from datetime import datetime
 import asyncio
 import certifi
-
 from pymongo.mongo_client import MongoClient
 
 from insert_into_collection import insert_announcement
@@ -17,6 +16,8 @@ from get_database import getDataBase
 
 # REFERENCES
 # referencing roles: https://discordpy.readthedocs.io/en/stable/api.html#discord.Role.name\
+
+
 uri = "mongodb+srv://seanhyde04:8kWiZWCqz1hsdGaV@discordbotannouncements.elqf3.mongodb.net/?retryWrites=true&w=majority&appName=DiscordBotAnnouncements"
 client = MongoClient(uri, tlsCAFile=certifi.where())
 try:
@@ -116,12 +117,6 @@ bot = commands.Bot(command_prefix="!", intents=intents, help_command=CustomHelpC
 tree = bot.tree
 bot.help_command = CustomHelpCommand()
 
-
-
-    
-
-
-
 # will only be triggered once the bot is added to the new server, so long as the bot doesn't go down
 @bot.event
 async def on_ready():
@@ -204,7 +199,6 @@ class ScheduleAnnouncement(ui.Modal, title="Schedule Announcement"):
         # Acknowledge the interaction immediately so the modal closes
         await interaction.response.send_message(f'Announcement scheduled for {parsedTime}', ephemeral=True)
 
-        # Define the async function inside on_submit() so it has access to modal data
         async def send_announcement_after_delay():
             await asyncio.sleep(delay)  # delay without blocking rest of bot functions
 
@@ -337,10 +331,10 @@ async def see_scheduled_announcements(interaction: discord.Interaction):
     """
     Slash command to view all scheduled announcements with pagination.
     """
-    # 1. Fetch all documents from the collection as a Python list
+    #Fetch all documents from the collection as a list
     doc_list = list(collection.find())
 
-    # 2. If there are no documents, send an ephemeral message
+    #If there are no documents, send an ephemeral message
     if not doc_list:
         await interaction.response.send_message(
             "No scheduled announcements found.",
@@ -348,14 +342,12 @@ async def see_scheduled_announcements(interaction: discord.Interaction):
         )
         return
 
-    # 3. Create the paginator View, passing in the list of documents
+    #Create the paginator View, passing in the list of documents
     view = AnnouncementsPaginatorView(doc_list)
 
-    # 4. Create the first embed from page 0
+    
     embed = view.create_embed()
 
-    # 5. Send the initial response with the embed and the View
-    # ephemeral=True means only the user who invoked the command can see it
     await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
 
@@ -418,6 +410,85 @@ class AnnouncementsPaginatorView(discord.ui.View):
             self.cur_page += 1
         embed = self.create_embed()
         await interaction.response.edit_message(embed=embed, view=self)
+        
+
+class SeePastAnnouncements(discord.ui.View):
+    def __init__(self, doc_list):
+        super().__init__(timeout=None)
+        self.doc_list = doc_list
+        self.cur_page = 0
+        self.max_page = len(doc_list) - 1
+
+    def create_embed(self) -> discord.Embed:
+        """Builds and returns an embed for the current page."""
+        while self.cur_page <= self.max_page:
+            doc = self.doc_list[self.cur_page]
+            scheduled_time = doc.get("time")
+
+            if isinstance(scheduled_time, str):
+                scheduled_time = datetime.fromisoformat(scheduled_time)
+
+            if scheduled_time <= datetime.now():
+                embed = discord.Embed(
+                    title=doc.get("title", "No Title"),
+                    description=doc.get("message", "No Message"),
+                    color=discord.Color.blue()
+                )
+                embed.add_field(name="Scheduled Time", value=str(scheduled_time), inline=False)
+
+                links = doc.get("links")
+                if links:
+                    embed.add_field(name="Links", value=links, inline=False)
+
+                embed.set_footer(
+                    text=f"Announced by {doc.get('name', 'Unknown')} | Page {self.cur_page+1}/{self.max_page+1}"
+                )
+                return embed
+            else:
+                self.cur_page += 1
+
+        return discord.Embed(
+            title="No past announcements found.",
+            description="All remaining announcements are scheduled for the future.",
+            color=discord.Color.red()
+        )
+
+    @discord.ui.button(label="Previous", style=discord.ButtonStyle.primary)
+    async def previous_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.cur_page > 0:
+            self.cur_page -= 1
+        embed = self.create_embed()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    @discord.ui.button(label="Next", style=discord.ButtonStyle.primary)
+    async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.cur_page < self.max_page:
+            self.cur_page += 1
+        embed = self.create_embed()
+        await interaction.response.edit_message(embed=embed, view=self)
+
+# Command
+@tree.command(
+    name="see_past_announcements",
+    description="See all announcements that have already been posted."
+)
+@is_organizer("Organizer")
+async def see_past_announcements(interaction: discord.Interaction):
+    doc_list = list(collection.find())
+
+    if not doc_list:
+        await interaction.response.send_message(
+            "No scheduled announcements found.",
+            ephemeral=True
+        )
+        return
+
+    view = SeePastAnnouncements(doc_list)
+    embed = view.create_embed()
+
+    await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+    
+
 
 
     
