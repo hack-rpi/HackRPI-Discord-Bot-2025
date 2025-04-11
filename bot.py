@@ -80,8 +80,9 @@ class CustomHelpCommand(commands.HelpCommand):
         embed.add_field(
             name = "Examples",
             value = (
-                "`!schedule_announcement` - Schedule and create a new announcment, indicate date and time and follow all instructions shown. Links not required."
-                "`\n!immediate_announcement` - Create an immediate announcement, follow all instructions shown, and an announcement will be sent as soon as you submit."
+                "`/schedule_announcement` - Schedule and create a new announcement, follow all steps in the pop-up, and make sure to use natural language for the time input.\n"
+                "\n`/see_scheduled_announcements` - Allows you to see all scheduled announcements.\n"
+                "\n`/announce_now` - Create an immediate announcement that will send out as soon as you submit, follow all pop-up steps."
             ),
         inline = False
         )
