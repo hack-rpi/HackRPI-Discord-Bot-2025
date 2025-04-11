@@ -1,0 +1,11 @@
+Resources made by Sean Hyde
+
+Resources for Discord.py
+https://docs.google.com/document/d/11xlwVJKQsqiHCU8UF1pxWdA6UZUVT1ZQc5QwwWG5CcU/edit?tab=t.0
+
+HackRPI Discord Bot: Getting Started 
+https://docs.google.com/document/d/1G7loG9Ad0dTyhWM6_oWwAdMlMFNdX4aWaXllKoCc4vA/edit?tab=t.0
+
+Source Code Explanation
+https://docs.google.com/document/d/13KeAzEt701DkKISRneTB8IKEIx0YFC7z5N0kxSWpwxg/edit?tab=t.0
+
