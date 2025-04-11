@@ -89,8 +89,10 @@ class CustomHelpCommand(commands.HelpCommand):
             name = "Examples",
             value = (
                 "`/schedule_announcement` - Schedule and create a new announcement, follow all steps in the pop-up, and make sure to use natural language for the time input.\n"
-                "\n`/see_scheduled_announcements` - Allows you to see all scheduled announcements.\n"
-                "\n`/announce_now` - Create an immediate announcement that will send out as soon as you submit, follow all pop-up steps."
+                "\n`/see_scheduled_announcements` - Allows you to see all scheduled announcements, click through the buttons to load more announcements.\n"
+                "\n`/see_past_announcements` - Allows you to see all announcements that have already been posted, click through the buttons to load more announcements.\n"
+                "\n`/announce_now` - Create an immediate announcement that will send out as soon as you submit, follow all pop-up steps.\n"
+                
             ),
         inline = False
         )
